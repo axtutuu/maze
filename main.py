@@ -184,4 +184,54 @@ s_a_history = goal_maze_ret_s_a(pi_0)
 print(s_a_history)
 print(f"step: {len(s_a_history)}")
 
+
+# thetaの更新関数
+def update_theta(theta, pi, s_a_history):
+    eta = 0.1 # 学習率
+    T = len(s_a_history) - 1
+
+    [m, n] = theta.shape
+    delta_theta = theta.copy()
+
+    # delta_thetaを要素ごとに求める
+    for i in range(0, m):
+        for j in range(0, n):
+            if not(np.isnan(theta[i, j])):
+                SA_i = [SA for SA in s_a_history if SA[0] == i]
+                SA_ij = [SA for SA in s_a_history if SA == [i, j]]
+
+                N_i = len(SA_i)
+                N_ij = len(SA_ij)
+                delta_theta[i, j] = (N_ij + pi[i, j] * N_i) / T
+    new_theta = theta + eta * delta_theta
+
+    return new_theta
+
+new_theta = update_theta(theta_0, pi_0, s_a_history)
+pi = softmax_convert_into_pi_from_theta(new_theta)
+print(pi)
+
+stop_epsilon = 10 ** -8 # 10^-8よりも方策に変化が少なかったら学習終了
+theta = theta_0
+pi = pi_0
+
+is_continue = True
+count = 1
+while  is_continue:
+    s_a_history = goal_maze_ret_s_a(pi)
+    new_theta = update_theta(theta, pi, s_a_history)
+    new_pi = softmax_convert_into_pi_from_theta(new_theta)
+
+    print(np.sum(np.abs(new_pi - pi))) # 方策の変化量
+    print(f"step: {str(len(s_a_history) - 1)}")
+
+    if np.sum(np.abs(new_pi - pi)) < stop_epsilon:
+        is_continue = False
+    else:
+        theta = new_theta
+        pi = new_pi
+
+np.set_printoptions(precision=3, suppress=True)
+print(pi)
+
 ####### 方策反復方  #######
